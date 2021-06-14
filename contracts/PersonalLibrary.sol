@@ -25,7 +25,7 @@ interface IYZapIn {
     ) external payable returns (uint256);
 }
 
-interface IFork {
+interface YZap {
     function routerAddress() external returns (address);
 }
 
@@ -464,7 +464,7 @@ contract PersonalLibrary {
         ProvideLiquiditySet memory _pl,
         LiquidityToVaultSet memory _lv,
         StakeSet memory _st
-    ) public {
+    ) public onlyStrategist {
         uint256 balance = _pl.amount;
 
         if(_pl.exchange > 0){
@@ -480,7 +480,9 @@ contract PersonalLibrary {
             balance = IERC20(_st.tokenToStake).balanceOf(address(this));
         }
 
-        stake(_st.poolTemplate, _st.stakeContractAddress, _st.tokenToStake, balance, _st.pid);
+        if(_st.stakeContractAddress != address(0)){
+            stake(_st.poolTemplate, _st.stakeContractAddress, _st.tokenToStake, balance, _st.pid);
+        }
     }
 
     /**
@@ -493,8 +495,11 @@ contract PersonalLibrary {
         UnstakeSet memory _un,
         VaultToLiquiditySet memory _vl,
         WithdrawLiquiditySet memory _wl
-    ) public {
-        unstake(_un.poolTemplate, _un.stakeContractAddress, _un.amount, _un.pid);
+    ) public strategistOrInvestor {
+
+        if(_un.stakeContractAddress != address(0)){
+            unstake(_un.poolTemplate, _un.stakeContractAddress, _un.amount, _un.pid);
+        }
 
         if(_vl.vaultAddress != address(0)){
             vaultToLiquidity(_vl.vaultAddress);
@@ -532,7 +537,7 @@ contract PersonalLibrary {
         uint256 _rewardType,
         address[] memory _tokens, 
         address[] memory _pools
-    ) public {
+    ) public onlyInvestor {
         unstakeAndWithdrawLiquidity(_un, _vl, _wl);
 
         if(_rewardType == 1){
@@ -774,7 +779,7 @@ contract PersonalLibrary {
     */
     function convertTokenToToken(address _toWhomToIssue, address _tokenToExchange, address _tokenToConvertTo, uint256 _amount) internal returns (uint256) {
 
-        address routerAddress = IFork(IFactory(factory).getContractToConvertTokens()).routerAddress();
+        address routerAddress = YZap(IFactory(factory).getContractToConvertTokens()).routerAddress();
         _approve(_tokenToExchange, routerAddress, _amount);
 
         uint256 length = (_tokenToExchange == networkNativeToken || networkNativeToken == _tokenToConvertTo)?2:3;
@@ -808,7 +813,7 @@ contract PersonalLibrary {
     */
     function convertTokenToETH(address _toWhomToIssue, address _tokenToExchange, uint256 _amount) internal returns (uint256)  {
 
-        address router = IFork(IFactory(factory).getContractToConvertTokens()).routerAddress();
+        address router = YZap(IFactory(factory).getContractToConvertTokens()).routerAddress();
 
         if(_tokenToExchange == networkNativeToken){
             //means we would like to exchange WETH(WBNB) to ETH(BNB)
@@ -848,7 +853,7 @@ contract PersonalLibrary {
             return _amount;
         }
 
-        address router = IFork(IFactory(factory).getContractToConvertTokens()).routerAddress();
+        address router = YZap(IFactory(factory).getContractToConvertTokens()).routerAddress();
 
         address[] memory path = new address[](2);
         path[0] = networkNativeToken; //WETH or WBNB

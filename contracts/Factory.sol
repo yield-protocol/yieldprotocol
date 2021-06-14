@@ -22,7 +22,7 @@ interface IERC20Permit {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }
 
-interface IFork {
+interface YZap {
     function routerAddress() external returns (address);
 }
 
@@ -326,7 +326,7 @@ contract Factory is ProxyFactory, Ownable, ReentrancyGuard {
     */
     function convertTokenToETH(address _toWhomToIssue, address _tokenToExchange, uint256 _amount) internal {
 
-        address router = IFork(getContractToConvertTokens()).routerAddress();
+        address router = YZap(getContractToConvertTokens()).routerAddress();
             
         IERC20(_tokenToExchange).approve(router, _amount);
 
